@@ -19,7 +19,7 @@ Um aplicativo Streamlit para registrar e monitorar prejuízos e quebras do seu n
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/Fernandocr26/controle-perdas.git
+git clone https://github.com/Fernandocr26/-Sistema-de-Controle-de-Perdas---Aplicativo-Streamlit.git
 cd controle-perdas
 ```
 
@@ -31,6 +31,11 @@ pip install -r requirements.txt
 ## ▶️ Como usar
 
 Execute o aplicativo com:
+```bash
+streamlit run streamlit_app.py
+```
+
+Se preferir, também é possível rodar:
 ```bash
 streamlit run app.py
 ```
