@@ -25,6 +25,17 @@ st.set_page_config(page_title="Controle de Perdas", page_icon="📉", layout="wi
 st.title("📉 Sistema de Controle de Perdas")
 st.markdown("Registre e monitore os prejuízos e quebras do seu negócio.")
 
+if not has_airtable():
+    if Table is None:
+        st.warning(
+            "A biblioteca `pyairtable` não está instalada. O app salvará os dados localmente em `perdas.csv`."
+        )
+    else:
+        st.info(
+            "O Airtable não está configurado. O app salvará os dados localmente em `perdas.csv`.
+Para usar o Airtable, configure `st.secrets.airtable` com `api_key`, `base_id` e `table_name`."
+        )
+
 
 def has_airtable() -> bool:
     return bool(AIRTABLE_CONFIG.get("api_key") and AIRTABLE_CONFIG.get("base_id") and AIRTABLE_CONFIG.get("table_name") and Table is not None)
