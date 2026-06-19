@@ -9,21 +9,66 @@ import pandas as pd  # type: ignore
 from datetime import datetime
 import os
 
+try:
+    from pyairtable import Table
+except ImportError:
+    Table = None
+
 # Nome do arquivo onde os dados serão salvos
 DATA_FILE = "perdas.csv"
 
-# Função para carregar os dados existentes
-@st.cache_data
-def carregar_dados():
-    if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE)
-    return pd.DataFrame(columns=["Data", "Produto", "Quantidade", "Motivo", "Custo Total (R$)"])
+AIRTABLE_CONFIG = st.secrets.get("airtable", {})
 
 # Configuração da página do Streamlit
 st.set_page_config(page_title="Controle de Perdas", page_icon="📉", layout="wide")
 
 st.title("📉 Sistema de Controle de Perdas")
 st.markdown("Registre e monitore os prejuízos e quebras do seu negócio.")
+
+
+def has_airtable() -> bool:
+    return bool(AIRTABLE_CONFIG.get("api_key") and AIRTABLE_CONFIG.get("base_id") and AIRTABLE_CONFIG.get("table_name") and Table is not None)
+
+
+def load_airtable_data() -> pd.DataFrame:
+    table = Table(
+        AIRTABLE_CONFIG["api_key"],
+        AIRTABLE_CONFIG["base_id"],
+        AIRTABLE_CONFIG["table_name"],
+    )
+    records = table.all()
+    rows = []
+    for record in records:
+        fields = record.get("fields", {})
+        rows.append(
+            {
+                "Data": fields.get("Data", ""),
+                "Produto": fields.get("Produto", ""),
+                "Quantidade": fields.get("Quantidade", 0),
+                "Motivo": fields.get("Motivo", ""),
+                "Custo Total (R$)": fields.get("Custo Total (R$)", 0.0),
+            }
+        )
+    return pd.DataFrame(rows, columns=["Data", "Produto", "Quantidade", "Motivo", "Custo Total (R$)"])
+
+
+def save_to_airtable(record: dict) -> None:
+    table = Table(
+        AIRTABLE_CONFIG["api_key"],
+        AIRTABLE_CONFIG["base_id"],
+        AIRTABLE_CONFIG["table_name"],
+    )
+    table.create(record)
+
+
+@st.cache_data
+def carregar_dados() -> pd.DataFrame:
+    if has_airtable():
+        return load_airtable_data()
+    if os.path.exists(DATA_FILE):
+        return pd.read_csv(DATA_FILE)
+    return pd.DataFrame(columns=["Data", "Produto", "Quantidade", "Motivo", "Custo Total (R$)"])
+
 
 # Inicializar os dados
 df_perdas = carregar_dados()
@@ -43,7 +88,7 @@ with col1:
             "Avaria/Dano Físico",
             "Erro de Produção",
             "Roubo/Furto",
-            "Outros"
+            "Outros",
         ])
         data_perda = st.date_input("Data da Ocorrência", datetime.now())
 
@@ -56,11 +101,15 @@ with col1:
                 "Produto": produto,
                 "Quantidade": quantidade,
                 "Motivo": motivo,
-                "Custo Total (R$)": custo
+                "Custo Total (R$)": custo,
             }
 
-            df_perdas = pd.concat([df_perdas, pd.DataFrame([nova_perda])], ignore_index=True)
-            df_perdas.to_csv(DATA_FILE, index=False)
+            if has_airtable():
+                save_to_airtable(nova_perda)
+                df_perdas = pd.concat([df_perdas, pd.DataFrame([nova_perda])], ignore_index=True)
+            else:
+                df_perdas = pd.concat([df_perdas, pd.DataFrame([nova_perda])], ignore_index=True)
+                df_perdas.to_csv(DATA_FILE, index=False)
 
             st.success(f"Perda de '{produto}' registrada com sucesso!")
             st.experimental_rerun()

@@ -15,6 +15,30 @@ Um aplicativo Streamlit para registrar e monitorar prejuízos e quebras do seu n
 - Python 3.8+
 - pip
 
+## Persistência no Streamlit Cloud
+
+No Streamlit Community Cloud, o arquivo `perdas.csv` é armazenado no sistema do container e pode ser perdido em deploys ou quando a aplicação reinicia. Para persistência permanente, você pode usar o Airtable como banco de dados externo.
+
+### Airtable (opcional)
+
+1. Crie uma conta em https://airtable.com
+2. Crie uma base e uma tabela com os campos:
+   - `Data`
+   - `Produto`
+   - `Quantidade`
+   - `Motivo`
+   - `Custo Total (R$)`
+3. Configure o Streamlit Secrets com:
+
+```toml
+[airtable]
+api_key = "SUA_API_KEY"
+base_id = "SEU_BASE_ID"
+table_name = "NomeDaTabela"
+```
+
+Quando o Airtable estiver configurado corretamente, o app salvará os registros lá automaticamente.
+
 ## 🔧 Instalação
 
 1. Clone o repositório:
